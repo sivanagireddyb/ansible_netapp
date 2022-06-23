@@ -1,0 +1,55 @@
+- hosts: localhost
+  gather_facts: false
+  vars:
+    input: &input
+      hostname:       ""
+      username:       ""
+      password:       ""
+      https:          true
+      validate_certs: false
+  collections:
+    - netapp.ontap
+
+  tasks:  
+  - name: Get Ontap Info
+    na_ontap_info:
+      state: info
+      gather_subset:
+        - volume_info
+        - aggregate_info
+      <<: *input
+    register: netapp
+
+  - name: Print volume details
+    debug:
+      msg:
+        - "SVM:       {{ netapp.ontap_info.volume_info[item].volume_id_attributes.owning_vserver_name }}"
+        - "Name:      {{ netapp.ontap_info.volume_info[item].volume_id_attributes.name }}"
+        - "Size:      {{ netapp.ontap_info.volume_info[item].volume_space_attributes.size }}"
+        - "Used:      {{ netapp.ontap_info.volume_info[item].volume_space_attributes.size_used }}"
+    with_items:
+      "{{ netapp.ontap_info.volume_info }}"
+    when:
+      not (netapp.ontap_info.volume_info[item].volume_state_attributes.is_node_root | bool)
+
+  - set_fact:
+      Used: "{{ netapp.ontap_info.volume_info[item].volume_space_attributes.size_used }}"
+
+  - name: Prevalidate usage percentage
+    block:
+      - debug: 
+          msg: "Pass"
+        when: Used|int >= 90
+      - set_fact:
+          precheck_status: "Pass"  
+        when: Used|int >= 90
+      - debug:
+          msg: "Fail"
+        when: Used|int <= 10
+      - set_fact:
+          precheck_status: "Pass"  
+        when: Used|int <= 90
+
+  - name: Notify after precheck
+    msg: "Passed test"
+    when: precheck_status == "Pass"
