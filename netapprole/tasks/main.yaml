@@ -7,18 +7,36 @@
       password:       ""
       https:          true
       validate_certs: false
+    volume_name: "myvol2"
+    owning_vserver_uuid: "f1750b57-dae5-11ec-ab29-000c29386da9"
   collections:
     - netapp.ontap
 
   tasks:  
   - name: Get Ontap Info
     na_ontap_info:
+      <<: *input  
       state: info
       gather_subset:
         - volume_info
-        - aggregate_info
-      <<: *input
+      query:
+        volume-attributes:
+          volume-id-attributes:
+            name: "{{ volume_name }}"
+            owning_vserver_uuid: "{{ owning_vserver_uuid }}"
+          volume-state-attributes:
+            state: online
+      desired_attributes:
+        volume-attributes:
+          volume-space-attributes:
+            filesystem_size:
+            size_total:
+            size_used:
+          volume-state-attributes:
+            state:
     register: netapp
+
+  - debug: var=netapp
 
   - name: Print volume details
     debug:
@@ -29,8 +47,8 @@
         - "Used:      {{ netapp.ontap_info.volume_info[item].volume_space_attributes.size_used }}"
     with_items:
       "{{ netapp.ontap_info.volume_info }}"
-    when:
-      not (netapp.ontap_info.volume_info[item].volume_state_attributes.is_node_root | bool)
+#    when:
+#      netapp.ontap_info.volume_info[item].volume_state_attributes.
 
   - set_fact:
       Used: "{{ netapp.ontap_info.volume_info[item].volume_space_attributes.size_used }}"
