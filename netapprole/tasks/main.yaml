@@ -34,6 +34,7 @@
             percentage-size-used:
           volume-id-attributes:
             aggr-list:
+              aggr-name:
           volume-state-attributes:
             state:
     register: netapp
@@ -43,11 +44,13 @@
       <<: *input  
       gather_subset: aggregate_info
       query:
-        aggregate-name: "{{ netapp.ontap_info.volume_info.volume_id_attributes.aggr_list.aggr_name }}"
+        aggregate-name: "{{ netapp.ontap_info.volume_info[item].volume_id_attributes.aggr_list.aggr_name }}"
       desired_attributes:
         aggr-space-attributes:
       use_native_zapi_tags: true
-      register: ontap_agginfo
+    with_items:
+      "{{ netapp.ontap_info.volume_info }}"
+    register: ontap_agginfo
 
   - debug: var=ontap_agginfo
 
