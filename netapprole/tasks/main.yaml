@@ -23,15 +23,15 @@
         volume-attributes:
           volume-id-attributes:
             name: "{{ volume_name }}"
-            owning_vserver_uuid: "{{ owning_vserver_uuid }}"
+            owning-vserver-uuid: "{{ owning_vserver_uuid }}"
           volume-state-attributes:
             state: online
       desired_attributes:
         volume-attributes:
           volume-space-attributes:
-            filesystem_size:
-            size_total:
-            size_used:
+            filesystem-size:
+            size-total:
+            size-used:
           volume-state-attributes:
             state:
     register: netapp
