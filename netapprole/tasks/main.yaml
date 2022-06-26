@@ -13,7 +13,7 @@
     - netapp.ontap
 
   tasks:  
-  - name: Get Ontap Info
+  - name: Get Ontap volume Info
     na_ontap_info:
       <<: *input  
       state: info
@@ -31,10 +31,25 @@
           volume-space-attributes:
             filesystem-size:
             size-total:
-            size-used:
+            percentage-size-used:
+          volume-id-attributes:
+            aggr-list:
           volume-state-attributes:
             state:
     register: netapp
+
+  - name: run ontap info module for aggregate module, requesting specific fields
+    na_ontap_info:
+      <<: *input  
+      gather_subset: aggregate_info
+      query:
+        aggregate-name: {{ netapp.ontap_info.volume_info.volume_id_attributes.aggr_list.aggr_name }}
+      desired_attributes:
+        aggr-space-attributes:
+      use_native_zapi_tags: true
+      register: ontap_agginfo
+
+  - debug: var=ontap_agginfo
 
   - debug: var=netapp
 
@@ -43,8 +58,8 @@
       msg:
         - "SVM:       {{ netapp.ontap_info.volume_info[item].volume_id_attributes.owning_vserver_name }}"
         - "Name:      {{ netapp.ontap_info.volume_info[item].volume_id_attributes.name }}"
-        - "Size:      {{ netapp.ontap_info.volume_info[item].volume_space_attributes.size }}"
-        - "Used:      {{ netapp.ontap_info.volume_info[item].volume_space_attributes.size_used }}"
+        - "Size:      {{ netapp.ontap_info.volume_info[item].volume_space_attributes.size_total }}"
+        - "Used:      {{ netapp.ontap_info.volume_info[item].volume_space_attributes.percentage_size_used }}"
     with_items:
       "{{ netapp.ontap_info.volume_info }}"
 
