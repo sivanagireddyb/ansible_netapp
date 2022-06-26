@@ -2,9 +2,9 @@
   gather_facts: false
   vars:
     input: &input
-      hostname:       ""
-      username:       ""
-      password:       ""
+      hostname:       "192.168.64.130"
+      username:       "admin"
+      password:       "netapp123"
       https:          true
       validate_certs: false
     volume_name: "myvol2"
