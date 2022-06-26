@@ -63,5 +63,6 @@
   - debug: var=precheck_status
   
   - name: Notify after precheck
-    msg: "Passed test"
+    debug:
+      msg: "Passed test"
     when: precheck_status == "Pass"
