@@ -47,27 +47,21 @@
         - "Used:      {{ netapp.ontap_info.volume_info[item].volume_space_attributes.size_used }}"
     with_items:
       "{{ netapp.ontap_info.volume_info }}"
-#    when:
-#      netapp.ontap_info.volume_info[item].volume_state_attributes.
 
   - set_fact:
-      Used: "{{ netapp.ontap_info.volume_info[item].volume_space_attributes.size_used }}"
+      Used_Size: "{{ netapp.ontap_info.volume_info.volume_space_attributes.size_used }}"
 
   - name: Prevalidate usage percentage
     block:
-      - debug: 
-          msg: "Pass"
-        when: Used|int >= 90
       - set_fact:
           precheck_status: "Pass"  
-        when: Used|int >= 90
-      - debug:
-          msg: "Fail"
-        when: Used|int <= 10
+        when: Used_Size|int >= 90
       - set_fact:
           precheck_status: "Pass"  
-        when: Used|int <= 90
+        when: Used_Size|int <= 90
 
+  - debug: var=precheck_status
+  
   - name: Notify after precheck
     msg: "Passed test"
     when: precheck_status == "Pass"
