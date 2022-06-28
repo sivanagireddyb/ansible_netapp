@@ -6,6 +6,7 @@
       username:       "admin"
       password:       "netapp123"
       https:          true
+      use_rest:       "always"
       validate_certs: false
     volume_name: "myvol2"
     owning_vserver_uuid: "f1750b57-dae5-11ec-ab29-000c29386da9"
@@ -24,8 +25,6 @@
           volume-id-attributes:
             name: "{{ volume_name }}"
             owning-vserver-uuid: "{{ owning_vserver_uuid }}"
-          volume-state-attributes:
-            state: online
       desired_attributes:
         volume-attributes:
           volume-space-attributes:
@@ -49,14 +48,11 @@
       gather_subset: aggregate_info
       query:
         aggr-attributes:
-#          aggregate-name: "{{ netapp.ontap_info.volume_info[item].volume_id_attributes.aggr_list.aggr_name }}"
           aggregate-name: "{{ aggr_name }}"
       desired_attributes:
         aggr-attributes:
           aggr-space-attributes:
             physical-used-percent:
-#    with_items:
-#      "{{ netapp.ontap_info.volume_info }}"
     register: ontap_agginfo
 
   - set_fact:
