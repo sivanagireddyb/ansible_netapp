@@ -19,7 +19,6 @@
        - name: Get Ontap volume Info
          na_ontap_info:
            <<: *input  
-           state: info
            gather_subset:
              - volume_info
            query:
