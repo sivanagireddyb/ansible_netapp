@@ -122,11 +122,11 @@
       - name: Increse size
         na_ontap_volume:
           state: present
-          name: {{ vol_ name }}
-          aggregate_name: {{ aggr_name }}
-          size: {{ total_size + total_size * 0.1 }}
+          name: "{{ vol_ name }}"
+          aggregate_name: "{{ aggr_name }}"
+          size: "{{ total_size + total_size * 0.1 }}"
           size_unit: bytes
-          vserver: {{ vserver_name }}
+          vserver: "{{ vserver_name }}"
           wait_for_completion: True
           comment: ansible increased size
         register: vol_increase_op
@@ -134,7 +134,7 @@
           - increased_count|int < 3 
 
       - debug: var=increased_count
-      
+
       - name: Update log file when expansion is sucessfull
         lineinfile:
           path: "/tmp/{{vol_name}}_{{ansible_date_time.date}}.log"
