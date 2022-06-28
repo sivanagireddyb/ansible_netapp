@@ -74,7 +74,7 @@
   - name: Print volume details
     debug:
       msg:
-        - "Vserver:             {{ verser_name }}"
+        - "Vserver:             {{ vserver_name }}"
         - "Name:                {{ vol_name }}"
         - "Total_Size:          {{ total_size }}"
         - "Used_Per:            {{ used_size }}"
