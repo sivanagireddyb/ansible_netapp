@@ -121,7 +121,7 @@
       - name: Increse size
         na_ontap_volume:
           state: present
-          name: "{{ vol_ name }}"
+          name: "{{ vol_name }}"
           aggregate_name: "{{ aggr_name }}"
           size: "{{ total_size + total_size * 0.1 }}"
           size_unit: bytes
