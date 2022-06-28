@@ -138,7 +138,7 @@
       - name: Update log file when expansion is sucessfull
         lineinfile:
           path: "/tmp/{{vol_name}}_{{ansible_date_time.date}}.log"
-          line: "{{ lookup('pipe','date +%Y-%m-%d-%H-%M-%S') }} {{ expansion_status }} {{ vol_name }}" 
+          line: "{{ lookup('pipe','date +%Y-%m-%d-%H-%M-%S') }} {{ 'Success' if not vol_increase_op.failed else 'Failed'}} {{ vol_name }}" 
         when: 
           - not vol_increase_op.failed|bool 
 
