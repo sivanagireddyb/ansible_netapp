@@ -124,7 +124,7 @@
           state: present
           name: "{{ vol_name }}"
           aggregate_name: "{{ aggr_name }}"
-          size: "{{ total_size|int + total_size|int * 0.1 }}"
+          size: "{{ (total_size|int + total_size|int * 0.1)|int }}"
           size_unit: bytes
           vserver: "{{ vserver_name }}"
           wait_for_completion: True
@@ -133,18 +133,18 @@
         when:
           - increased_count|int < 3 
 
-      - debug: var=increased_count
+      - debug: var=vol_increase_op
 
       - name: Update log file when expansion is sucessfull
         lineinfile:
           path: "/tmp/{{vol_name}}_{{ansible_date_time.date}}.log"
           line: "{{ lookup('pipe','date +%Y-%m-%d-%H-%M-%S') }} {{ expansion_status }} {{ vol_name }}" 
         when: 
-          - vol_increase_op.stdout.status == "Success"
-  
+          - not vol_increase_op.failed|bool 
+
       - debug:
           msg: "Increase volume task Failed"
         when:
-          - vol_increase_op.stdout.status != "Success"
+          - vol_increase_op.failed|bool
     when:
       - precheck_status == "Pass"
