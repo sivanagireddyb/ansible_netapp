@@ -34,47 +34,64 @@
             percentage-size-used:
           volume-id-attributes:
             aggr-list:
-          volume-state-attributes:
-            state:
+              aggr-name:
     register: netapp
+
+  - set_fact: 
+      aggr_name: "{{ netapp.ontap_info.volume_info[item].volume_id_attributes.aggr_list.aggr_name }}"
+    with_items:
+      "{{ netapp.ontap_info.volume_info }}"
 
   - name: run ontap info module for aggregate module, requesting specific fields
     na_ontap_info:
       <<: *input  
+      state: info
       gather_subset: aggregate_info
       query:
-        aggregate-name: "{{ netapp.ontap_info.volume_info.volume_id_attributes.aggr_list.aggr_name }}"
+        aggr-attributes:
+#          aggregate-name: "{{ netapp.ontap_info.volume_info[item].volume_id_attributes.aggr_list.aggr_name }}"
+          aggregate-name: "{{ aggr_name }}"
       desired_attributes:
-        aggr-space-attributes:
-      use_native_zapi_tags: true
-      register: ontap_agginfo
+        aggr-attributes:
+          aggr-space-attributes:
+            physical-used-percent:
+#    with_items:
+#      "{{ netapp.ontap_info.volume_info }}"
+    register: ontap_agginfo
 
-  - debug: var=ontap_agginfo
-
-  - debug: var=netapp
+  - set_fact:
+      used_size: "{{ netapp.ontap_info.volume_info[item].volume_space_attributes.percentage_size_used }}"
+      svm: "{{ netapp.ontap_info.volume_info[item].volume_id_attributes.owning_vserver_name }}"
+      vol_name: "{{ netapp.ontap_info.volume_info[item].volume_id_attributes.name }}"
+      total_size: "{{ netapp.ontap_info.volume_info[item].volume_space_attributes.size_total }}"
+    with_items:
+      "{{ netapp.ontap_info.volume_info }}"
+  - set_fact:
+      aggr_per_used: "{{ ontap_agginfo.ontap_info.aggregate_info[item].aggr_space_attributes.physical_used_percent }}"
+    with_items:
+      "{{ ontap_agginfo.ontap_info.aggregate_info }}"
 
   - name: Print volume details
     debug:
       msg:
-        - "SVM:       {{ netapp.ontap_info.volume_info[item].volume_id_attributes.owning_vserver_name }}"
-        - "Name:      {{ netapp.ontap_info.volume_info[item].volume_id_attributes.name }}"
-        - "Size:      {{ netapp.ontap_info.volume_info[item].volume_space_attributes.size_total }}"
-        - "Used:      {{ netapp.ontap_info.volume_info[item].volume_space_attributes.percentage_size_used }}"
-    with_items:
-      "{{ netapp.ontap_info.volume_info }}"
-
-  - set_fact:
-      Used_Size: "{{ netapp.ontap_info.volume_info.volume_space_attributes.size_used }}"
+        - "SVM:                 {{ svm }}"
+        - "Name:                {{ vol_name }}"
+        - "Total_Size:          {{ total_size }}"
+        - "Used_Per:            {{ used_size }}"
+        - "Aggr_Per_Used:       {{ aggr_per_used }}"
 
   - name: Prevalidate usage percentage
     block:
       - set_fact:
           precheck_status: "Pass"  
-        when: Used_Size|int >= 90
+        when: 
+           - used_size|int >= 90
+           - aggr_per_used >= 90
       - set_fact:
-          precheck_status: "Pass"  
-        when: Used_Size|int <= 90
-
+          precheck_status: "Fail"  
+        when: 
+           - used_size|int <= 90
+           - aggr_per_used <= 90
   - debug: var=precheck_status
   
   - name: Notify after precheck
