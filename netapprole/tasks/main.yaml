@@ -86,7 +86,7 @@
           precheck_status: "Pass"  
         when: 
            - used_size|int >= 90
-           - aggr_per_used < 90
+           - aggr_per_used|int < 90
       - set_fact:
           precheck_status: "Fail"  
         when: 
