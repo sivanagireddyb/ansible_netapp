@@ -124,7 +124,7 @@
           state: present
           name: "{{ vol_name }}"
           aggregate_name: "{{ aggr_name }}"
-          size: "{{ (total_size|int + total_size|int * 0.1)|int }}"
+          size: "{{ (total_size|int + total_size|int * 0.1 + 10)|int }}"
           size_unit: bytes
           vserver: "{{ vserver_name }}"
           wait_for_completion: True
