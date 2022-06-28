@@ -61,7 +61,7 @@
 
   - set_fact:
       used_size: "{{ netapp.ontap_info.volume_info[item].volume_space_attributes.percentage_size_used }}"
-      verser_name: "{{ netapp.ontap_info.volume_info[item].volume_id_attributes.owning_vserver_name }}"
+      vserver_name: "{{ netapp.ontap_info.volume_info[item].volume_id_attributes.owning_vserver_name }}"
       vol_name: "{{ netapp.ontap_info.volume_info[item].volume_id_attributes.name }}"
       total_size: "{{ netapp.ontap_info.volume_info[item].volume_space_attributes.size_total }}"
     with_items:
