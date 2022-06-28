@@ -60,7 +60,7 @@
     register: ontap_agginfo
 
   - set_fact:
-      used_size: "{{ netapp.ontap_info.volume_info[item].volume_space_attributes.percentage_size_used }}"
+      used_size: "{{ netapp.ontap_info.volume_info[item].volume_space_attributes.percentage_size_used|int }}"
       vserver_name: "{{ netapp.ontap_info.volume_info[item].volume_id_attributes.owning_vserver_name }}"
       vol_name: "{{ netapp.ontap_info.volume_info[item].volume_id_attributes.name }}"
       total_size: "{{ netapp.ontap_info.volume_info[item].volume_space_attributes.size_total }}"
@@ -120,10 +120,11 @@
   
       - name: Increse size
         na_ontap_volume:
+          <<: *input  
           state: present
           name: "{{ vol_name }}"
           aggregate_name: "{{ aggr_name }}"
-          size: "{{ total_size + total_size * 0.1 }}"
+          size: "{{ total_size|int + total_size|int * 0.1 }}"
           size_unit: bytes
           vserver: "{{ vserver_name }}"
           wait_for_completion: True
