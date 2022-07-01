@@ -1,6 +1,12 @@
 - hosts: localhost
   gather_facts: true
   vars:
+    input: &input 
+      hostname: cluster2.demo.netapp.com 
+      username: admin 
+      password: Netapp1! 
+      https: true 
+      validate_certs: true   
     volume_name: "myvol2"
     owning_vserver_uuid: "f1750b57-dae5-11ec-ab29-000c29386da9"
   collections:
