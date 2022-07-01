@@ -1,8 +1,0 @@
----
-# defaults file 
- input: &input 
-  hostname: cluster2.demo.netapp.com 
-  username: admin 
-  password: Netapp1! 
-  https: true 
-  validate_certs: true 

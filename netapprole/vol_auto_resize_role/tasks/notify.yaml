@@ -1,0 +1,13 @@
+- name: Notify Contacts
+  uri:
+    url: "{{ notify_host }}" 
+    method: POST 
+#    user: "{{ notify_api_username }}" 
+#    password: "{{ notify_api_pass }}" 
+    return_content: yes 
+    body: "{{ lookup('template','notification.j2') }}" 
+    body_format: json 
+#    status_code: 200 
+    timeout: 180 
+    headers:
+      Content-Type: application/json

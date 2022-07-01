@@ -1,0 +1,15 @@
+---
+# defaults file 
+input: &input 
+  hostname: cluster2.demo.netapp.com 
+  username: admin 
+  password: Netapp1! 
+  https: true 
+  validate_certs: true 
+
+psql_user: 
+psql_pass:
+psql_host: 
+psql_db_name: 
+
+notify_host: "https://ap.notify.storage.dit.us.caas.oneadp.com/docs#/default/Notification_api_notification_post"
