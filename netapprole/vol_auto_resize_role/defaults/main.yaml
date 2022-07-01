@@ -1,11 +1,10 @@
 ---
 # defaults file 
-input: &input 
-  hostname: cluster2.demo.netapp.com 
-  username: admin 
-  password: Netapp1! 
-  https: true 
-  validate_certs: true 
+netapp_hostname: cluster2.demo.netapp.com 
+netapp_username: admin 
+netapp_password: Netapp1! 
+netapp_https: true 
+netapp_validate_certs: true 
 
 psql_user: 
 psql_pass:

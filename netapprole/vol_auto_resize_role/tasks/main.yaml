@@ -22,7 +22,11 @@
   block: 
      - name: Get Ontap volume Info
        na_ontap_info:
-         <<: *input  
+         hostname: "{{ netapp_hostname }}" 
+         username: "{{ netapp_username }}" 
+         password: "{{ netapp_password }}" 
+         https: "{{ netapp_https }}" 
+         validate_certs: "{{ netaapp_validate_certs }}" 
          gather_subset:
            - volume_info
          query:
@@ -48,8 +52,11 @@
  
      - name: run ontap info module for aggregate module, requesting specific fields
        na_ontap_info:
-         <<: *input  
-         state: info
+         hostname: "{{ netapp_hostname }}" 
+         username: "{{ netapp_username }}" 
+         password: "{{ netapp_password }}" 
+         https: "{{ netapp_https }}" 
+         validate_certs: "{{ netaapp_validate_certs }}"               
          gather_subset: aggregate_info
          query:
            aggr-attributes:
@@ -123,7 +130,11 @@
 
     - name: Increse size
       na_ontap_volume:
-        <<: *input  
+        hostname: "{{ netapp_hostname }}" 
+        username: "{{ netapp_username }}" 
+        password: "{{ netapp_password }}" 
+        https: "{{ netapp_https }}" 
+        validate_certs: "{{ netaapp_validate_certs }}" 
         state: present
         name: "{{ vol_name }}"
         aggregate_name: "{{ aggr_name }}"
