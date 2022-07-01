@@ -14,7 +14,7 @@
     
     - name: Filter domains from psql query output
       set_fact:
-        conatct_list: {{ psql_qury_op.query_result.contacts }} 
+        conatct_list: "{{ psql_qury_op.query_result.contacts }}"
     
     - debug: msg="{{ conatct_list }}"
 
