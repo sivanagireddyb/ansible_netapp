@@ -1,7 +1,5 @@
 - hosts: localhost
   gather_facts: true
-  vars_files:
-    - "../vars/main.yaml"
   vars:
     volume_name: "myvol2"
     owning_vserver_uuid: "f1750b57-dae5-11ec-ab29-000c29386da9"
