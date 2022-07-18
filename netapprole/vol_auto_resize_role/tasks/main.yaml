@@ -60,8 +60,6 @@
 
     - name: Check used_size after increase
       include_tasks: gather_vol_info.yaml
-      when:
-        - used_size|int < 3 
 
     - name: Increase Vol size 2nd time when used % is still is not below threshold
       include_tasks: increase_size.yaml
