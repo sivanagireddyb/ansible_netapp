@@ -1,4 +1,24 @@
 ---
+
+- name: Get Vol info
+  include_tasks: gather_vol_info.yaml  
+
+- name: Prevalidate usage percentage
+  block:
+    - set_fact:
+        precheck_status: "Pass"  
+      when: 
+         - used_size|int >= 90
+         - aggr_per_used|int < 90
+         - '"{{vol_type}}" = "rw"'
+         - '"k8" not in {{ vserver_name }}'
+    - set_fact:
+        precheck_status: "Fail"  
+      when: 
+         - used_size|int <= 90 or aggr_per_used|int >= 90
+
+- debug: var=precheck_status
+
 - name: Get contact details from PSQL
   block:
     - name: Fetch DLS from PSQL DB
@@ -18,144 +38,84 @@
     
     - debug: msg="{{ conatct_list }}"
 
-- name: Precheck  Validation
-  block: 
-     - name: Get Ontap volume Info
-       na_ontap_info:
-         hostname: "{{ netapp_hostname }}" 
-         username: "{{ netapp_username }}" 
-         password: "{{ netapp_password }}" 
-         https: "{{ netapp_https }}" 
-         validate_certs: "{{ netaapp_validate_certs }}" 
-         gather_subset:
-           - volume_info
-         query:
-           volume-attributes:
-             volume-id-attributes:
-               name: "{{ volume_name }}"
-               owning-vserver-uuid: "{{ owning_vserver_uuid }}"
-         desired_attributes:
-           volume-attributes:
-             volume-space-attributes:
-               filesystem-size:
-               size-total:
-               percentage-size-used:
-             volume-id-attributes:
-               aggr-list:
-                 aggr-name:
-       register: netapp
- 
-     - set_fact: 
-         aggr_name: "{{ netapp.ontap_info.volume_info[item].volume_id_attributes.aggr_list.aggr_name }}"
-       with_items:
-         "{{ netapp.ontap_info.volume_info }}"
- 
-     - name: run ontap info module for aggregate module, requesting specific fields
-       na_ontap_info:
-         hostname: "{{ netapp_hostname }}" 
-         username: "{{ netapp_username }}" 
-         password: "{{ netapp_password }}" 
-         https: "{{ netapp_https }}" 
-         validate_certs: "{{ netaapp_validate_certs }}"               
-         gather_subset: aggregate_info
-         query:
-           aggr-attributes:
-             aggregate-name: "{{ aggr_name }}"
-         desired_attributes:
-           aggr-attributes:
-             aggr-space-attributes:
-               physical-used-percent:
-       register: ontap_agginfo
- 
-     - set_fact:
-         used_size: "{{ netapp.ontap_info.volume_info[item].volume_space_attributes.percentage_size_used|int }}"
-         vserver_name: "{{ netapp.ontap_info.volume_info[item].volume_id_attributes.owning_vserver_name }}"
-         vol_name: "{{ netapp.ontap_info.volume_info[item].volume_id_attributes.name }}"
-         total_size: "{{ netapp.ontap_info.volume_info[item].volume_space_attributes.size_total }}"
-       with_items:
-         "{{ netapp.ontap_info.volume_info }}"
-     - set_fact:
-         aggr_per_used: "{{ ontap_agginfo.ontap_info.aggregate_info[item].aggr_space_attributes.physical_used_percent }}"
-       with_items:
-         "{{ ontap_agginfo.ontap_info.aggregate_info }}"
- 
-     - name: Print volume details
-       debug:
-         msg:
-           - "Vserver:             {{ vserver_name }}"
-           - "Name:                {{ vol_name }}"
-           - "Total_Size:          {{ total_size }}"
-           - "Used_Per:            {{ used_size }}"
-           - "Aggr_Per_Used:       {{ aggr_per_used }}"
- 
-     - name: Prevalidate usage percentage
-       block:
-         - set_fact:
-             precheck_status: "Pass"  
-           when: 
-              - used_size|int >= 90
-              - aggr_per_used|int < 90
-         - set_fact:
-             precheck_status: "Fail"  
-           when: 
-              - used_size|int <= 90 or aggr_per_used|int >= 90
-     - debug: var=precheck_status
- 
-     - name: Notify after precheck
-       include_tasks: notify.yaml
-       vars:
-         subject: "{{ vol_name }} precheck is {{ precheck_status }}"
-         message: "{{ vol_name }} precheck failed bcz toatl size is {{vol_t}}"
-         facts: '{"volume": "{{ vol_name }}"}'         
-  tags: run_precheck
-  
+- name: Get the num of times vol increased in last 24hr
+  postgresql_query:
+    db: "{{ vol_autosize_db_name }}"
+    login_host: "{{ psql_host }}"
+    login_user: "{{ psql_user }}"
+    login_password: "{{ psql_pass }}"        
+    query: SELECt COUNT(*) FROM {{ vol_autosize_table_name }}  WHERE timestamp = "{{ ansible_date_time.date }}" AND volname = "{{vol_name}}" AND cluster = "{{ cluster }}"
+  register: todays_inc_count
+
+- debug: var=todays_inc_count
+
 - name: Increase Vol Size
   block:
-    - name: Create log file
-      file:
-        path: "/tmp/{{vol_name}}_{{ansible_date_time.date}}.log"
-        state: touch
+    - name: Increase Vol size
+      include_tasks: increase_size.yaml
+#      until: app_status.json.status == "READY"
+#      retries: 3
+#      delay: 5
+#      register: vol_increase_op
 
-    - name: Fetch number of lines from log file
-      slurp:
-        src: "/tmp/{{vol_name}}_{{ansible_date_time.date}}.log"
-      register: log_file
-
-    - name: Store count in varibale increased_count
-      set_fact:
-        increased_count: "{{ (log_file.content | b64decode).splitlines() | length }}"
-
-    - debug:
-        msg: "Number of times already incremented today: {{ increased_count }}"
-
-    - name: Increse size
-      na_ontap_volume:
-        hostname: "{{ netapp_hostname }}" 
-        username: "{{ netapp_username }}" 
-        password: "{{ netapp_password }}" 
-        https: "{{ netapp_https }}" 
-        validate_certs: "{{ netaapp_validate_certs }}" 
-        state: present
-        name: "{{ vol_name }}"
-        aggregate_name: "{{ aggr_name }}"
-        size: "{{ (total_size|int + total_size|int * 0.1 + 10)|int }}"
-        size_unit: bytes
-        vserver: "{{ vserver_name }}"
-        wait_for_completion: True
-        comment: ansible increased size
-      register: vol_increase_op
+    - name: Check used_size after increase
+      include_tasks: gather_vol_info.yaml
       when:
-        - increased_count|int < 3 
-    - debug: var=vol_increase_op
-    - name: Update log file when expansion is sucessfull
-      lineinfile:
-        path: "/tmp/{{vol_name}}_{{ansible_date_time.date}}.log"
-        line: "{{ lookup('pipe','date +%Y-%m-%d-%H-%M-%S') }} {{ 'Success' if not vol_increase_op.failed else 'Failed'}} {{ vol_name }}" 
-      when: 
-        - vol_increase_op.changed|bool 
-    - debug:
-        msg: "Volume has't increased"
+        - used_size|int < 3 
+
+    - name: Increase Vol size 2nd time when used % is still is not below threshold
+      include_tasks: increase_size.yaml
+      register: vol_inc2_op
       when:
-        - not vol_increase_op.changed|bool
+        - used_size|int >= 93
+
+    - name: Check used_size after increase
+      include_tasks: gather_vol_info.yaml
+      when:
+        - vol_inc2_op.changed|bool
+
+    - name: Increase Vol size 3nd time when used % is still is not below threshold
+      include_tasks: increase_size.yaml
+      register: vol_inc3_op
+      when:
+        - used_size|int >= 93
+
+    - name: Check used_size after increase
+      include_tasks: gather_vol_info.yaml
+      when:
+        - vol_inc3_op.changed|bool
+  register: vol_increase_op
   when:
+    - todays_inc_count|int < 3
     - precheck_status == "Pass"
+
+- name: Notify after precheck
+  include_tasks: notify.yaml
+  vars:
+    subject: "{{ vol_name }} increase Failed"
+    message: "{{ vol_name }} used size is {{ vol_used_percent }}"
+    facts: '{"volume": "{{ vol_name }}"}'
+  when: 
+    - not vol_increase_op.changed|bool
+    - used_size|int >= 93
+
+- name: Save vol info in psql db after increase sucessful
+  postgresql_query:
+    db: "{{ vol_autosize_db_name }}"
+    login_host: "{{ psql_host }}"
+    login_user: "{{ psql_user }}"
+    login_password: "{{ psql_pass }}"        
+    query: INSERT INTO {{ vol_autosize_table_name }} (timestamp, volname, cluster, volsvm, voltype, volsize, volusedpercent, increasedsize, contacts) VALUES (%s, %s, %s,%s, %s, %s, %s, %s, %s)
+    positional_args:
+      - "{{ ansible_date_time.date }}"
+      - "{{ vol_name }}"
+      - "{{ vol_svm }}"
+      - "{{ vol_type }}"
+      - "{{ vol_size }}"
+      - "{{ vol_used_percent }}"
+      - "{{ increasedsize }}"
+      - "{{ increased }}"
+      - "{{ contacts }}"
+  when: 
+    - vol_increase_op.changed|bool 
+    - used_size|int < 93

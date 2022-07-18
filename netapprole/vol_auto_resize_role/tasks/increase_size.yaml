@@ -1,0 +1,17 @@
+- name: Increase vol size
+  block:
+    - name: Increse size
+      na_ontap_volume:
+        hostname: "{{ netapp_hostname }}" 
+        username: "{{ netapp_username }}" 
+        password: "{{ netapp_password }}" 
+        https: "{{ netapp_https }}" 
+        validate_certs: "{{ netaapp_validate_certs }}" 
+        state: present
+        name: "{{ vol_name }}"
+        aggregate_name: "{{ aggr_name }}"
+        size: "{{ (total_size|int + total_size|int * 0.1 + 10)|int }}"
+        size_unit: bytes
+        vserver: "{{ vserver_name }}"
+        wait_for_completion: True
+        comment: ansible increased size

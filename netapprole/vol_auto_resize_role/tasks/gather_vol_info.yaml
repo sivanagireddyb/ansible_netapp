@@ -1,0 +1,44 @@
+---
+- name: Get Vol info
+  block:
+    - name: Gather volume Info and used-percentage
+      na_ontap_restit:
+        hostname:       "{{ cluster }}"
+        username:       "{{ username }}"
+        password:       "{{ password }}"
+        https:          true
+        use_rest:       "always"
+        validate_certs: false
+        api: "private/cli/volume?volume={{vol_name}}&fields=size,percent-used,aggregate,comment,type,security-style"
+        method: GET
+      register: vol_info
+    - debug: var=vol_info
+    - set_fact:
+        vol_name: "{{ vol_info.response.records[0].volume }}"
+        vol_size: "{{ vol_info.response.records[0].size }}"
+        vol_aggr: "{{ vol_info.response.records[0].aggregate }}"
+        vol_used_percent: "{{ vol_info.response.records[0].percent_used }}"
+        vol_svm: "{{ vol_info.response.records[0].vserver }}"
+        vol_type: "{{ vol_info.response.records[0].type }}"
+    - debug:
+        msg:
+          - "vol_name: {{ vol_name }}"
+          - "vol_size: {{ vol_size }}"
+          - "vol_aggregate: {{ vol_aggr }}"
+          - "vol_used_percent: {{ vol_used_percent }}"
+          - "vol_svm: {{ vol_svm }}"
+          - "vol_type: {{vol_type }}"
+    - name: Gather aggregate Info and used-percentage
+      na_ontap_restit:
+        hostname:       "{{ cluster }}"
+        username:       "{{ username }}"
+        password:       "{{ password }}"
+        https:          true
+        use_rest:       "always"
+        validate_certs: false
+        api: "private/cli/storage/aggregate?aggregate={{vol_aggr}}&fields=aggregate,percent-used"
+        method: GET
+      register: aggr_info
+    - debug: var=aggr_info
+    - set_fact: 
+        aggr_used_percent: "{{aggr_info.response.records[0].percent_used}}"
