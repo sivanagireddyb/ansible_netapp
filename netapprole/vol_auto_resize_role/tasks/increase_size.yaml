@@ -14,4 +14,3 @@
         size_unit: bytes
         vserver: "{{ vserver_name }}"
         wait_for_completion: True
-        comment: ansible increased size

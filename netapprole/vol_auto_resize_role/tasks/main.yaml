@@ -19,24 +19,8 @@
 
 - debug: var=precheck_status
 
-- name: Get contact details from PSQL
-  block:
-    - name: Fetch DLS from PSQL DB
-      postgresql_query:
-        db: "{{ psql_db_name }}"
-        login_host: "{{ psql_host }}"
-        login_user: "{{ psql_user }}"
-        login_password: "{{ psql_pass }}"
-        query: SELECT contacts FROM public.netappvolcontacts WHERE volume = %s
-        positional_args:
-          - "{{ volume_name }}"
-      register: psql_qury_op
-    
-    - name: Filter domains from psql query output
-      set_fact:
-        conatct_list: "{{ psql_qury_op.query_result.contacts }}"
-    
-    - debug: msg="{{ conatct_list }}"
+- name: Get Vol info
+  include_tasks: get_contacts.yaml  
 
 - name: Get the num of times vol increased in last 24hr
   postgresql_query:
